@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>随机抽签器 · GitHub Pages 可用</title>
+<meta name="description" content="简单好用的随机抽签网页（算法组/软件组/嵌入式组/宣传部/组织部）" />
+<style>
+  :root{
+    --bg1:#07143a; --bg2:#0f2a5a; --accent:#ffd166; --card:#0b2545;
+    --glass: rgba(255,255,255,0.04);
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, "Helvetica Neue", Arial;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background: radial-gradient(600px 300px at 10% 10%, rgba(147,51,234,0.12), transparent),
+                linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#eaf2ff; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .app{
+    width:min(980px,96%); background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:14px; padding:20px; box-shadow: 0 12px 40px rgba(2,6,23,0.6);
+    display:grid; grid-template-columns: 1fr 300px; gap:18px; align-items:start;
+  }
+
+  .left{padding:18px; border-radius:10px; background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.02));}
+  h1{margin:0 0 6px 0;font-size:1.4rem}
+  p.lead{margin:0 0 14px 0;color:#cfe8ff;opacity:0.9;font-size:0.95rem}
+
+  .wheel{
+    height:160px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:1.4rem;color:#061425;background:linear-gradient(135deg,#7c3aed,#06b6d4);
+    position:relative; overflow:hidden; box-shadow: 0 8px 26px rgba(12,12,20,0.5);
+  }
+  .controls{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .btn{
+    padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700;
+    background:transparent;color:inherit;transition:transform .12s ease, box-shadow .12s;
+  }
+  .btn.primary{background:var(--accent); color:#052041; box-shadow:0 8px 20px rgba(0,0,0,0.25);}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);}
+
+  .right{padding:16px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .option{
+    display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;
+    background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03);
+  }
+  .option .leftside{display:flex;gap:8px;align-items:center;}
+  .option input[type="text"]{background:transparent;border:0;color:inherit;font-weight:700;width:140px}
+  .option input[type="checkbox"]{transform:scale(1.15);}
+
+  .history{margin-top:12px;max-height:220px;overflow:auto;padding:8px;border-radius:8px;background:rgba(2,6,23,0.45)}
+  .history li{padding:6px 8px;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:0.95rem}
+
+  footer.note{grid-column:1/3;margin-top:10px;text-align:center;color:rgba(255,255,255,0.65);font-size:0.9rem}
+
+  @media (max-width:880px){ .app{grid-template-columns:1fr} .right{order:-1} .wheel{height:140px} }
+</style>
+</head>
+<body>
+  <main class="app" role="main">
+    <section class="left" aria-labelledby="title">
+      <h1 id="title">随机抽签器</h1>
+      <p class="lead">点击“抽签”来选择一个部门。可编辑选项、记录历史、支持按 Enter 触发。</p>
+
+      <div class="wheel" id="wheel" aria-live="polite">算法组 · 软件组 · 嵌入式组 · 宣传部 · 组织部</div>
+
+      <div class="controls" style="margin-top:14px">
+        <button class="btn primary" id="drawBtn" title="抽签（Enter）">抽签 🎲</button>
+        <button class="btn ghost" id="drawMultipleBtn" title="一次抽取多名">抽取 3 名</button>
+        <button class="btn ghost" id="shuffleBtn" title="打乱选项显示">打乱</button>
+        <button class="btn ghost" id="resetBtn" title="清空历史并复位">重置</button>
+        <button class="btn ghost" id="copyBtn" title="复制最近一次结果">复制</button>
+      </div>
+
+      <div style="margin-top:12px;color:rgba(255,255,255,0.75);font-size:0.95rem">
+        快捷键：按 <kbd>Enter</kbd> 抽签，按 <kbd>R</kbd> 重置。
+      </div>
+    </section>
+
+    <aside class="right" aria-labelledby="opts">
+      <h3 id="opts" style="margin:0 0 10px 0">抽签选项（可编辑/多选启用）</h3>
+
+      <div class="list" id="optionList">
+        <div class="option"><div class="leftside"><input type="checkbox" data-name="算法组" checked><input type="text" value="算法组" data-name="算法组"></div><div class="rightside"><button class="btn" data-action="delete">删除</button></div></div>
+        <div class="option"><div class="leftside"><input type="checkbox" data-name="软件组" checked><input type="text" value="软件组" data-name="软件组"></div><div class="rightside"><button class="btn" data-action="delete">删除</button></div></div>
+        <div class="option"><div class="leftside"><input type="checkbox" data-name="嵌入式组" checked><input type="text" value="嵌入式组" data-name="嵌入式组"></div><div class="rightside"><button class="btn" data-action="delete">删除</button></div></div>
+        <div class="option"><div class="leftside"><input type="checkbox" data-name="宣传部" checked><input type="text" value="宣传部" data-name="宣传部"></div><div class="rightside"><button class="btn" data-action="delete">删除</button></div></div>
+        <div class="option"><div class="leftside"><input type="checkbox" data-name="组织部" checked><input type="text" value="组织部" data-name="组织部"></div><div class="rightside"><button class="btn" data-action="delete">删除</button></div></div>
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button id="addOption" class="btn">添加选项</button>
+        <button id="exportBtn" class="btn">导出历史</button>
+      </div>
+
+      <h4 style="margin-top:12px;margin-bottom:6px">历史</h4>
+      <ul class="history" id="history" aria-live="polite"></ul>
+    </aside>
+
+    <footer class="note">保存为 <code>index.html</code> 并推到 GitHub 仓库，启用 GitHub Pages（主分支 / root 或 docs/）即可访问。</footer>
+  </main>
+
+<script>
+/* 简洁但完整的前端逻辑（无外部依赖） */
+const wheel = document.getElementById('wheel');
+const drawBtn = document.getElementById('drawBtn');
+const drawMultipleBtn = document.getElementById('drawMultipleBtn');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const resetBtn = document.getElementById('resetBtn');
+const copyBtn = document.getElementById('copyBtn');
+const optionList = document.getElementById('optionList');
+const addOptionBtn = document.getElementById('addOption');
+const historyEl = document.getElementById('history');
+const exportBtn = document.getElementById('exportBtn');
+
+function getOptions(){
+  return Array.from(optionList.querySelectorAll('.option')).map(opt=>{
+    const txt = opt.querySelector('input[type="text"]').value.trim();
+    const enabled = opt.querySelector('input[type="checkbox"]').checked;
+    return {name: txt || '未命名', enabled};
+  }).filter(o=>o.enabled);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function animatePick(names, times=28){
+  for(let i=0;i<times;i++){
+    const pick = names[Math.floor(Math.random()*names.length)];
+    wheel.textContent = pick;
+    await sleep(40 + i*8);
+  }
+}
+function pushHistory(item){
+  const li = document.createElement('li');
+  const now = new Date().toLocaleString();
+  li.textContent = `${now} — ${item}`;
+  historyEl.prepend(li);
+}
+drawBtn.addEventListener('click', async ()=>{
+  const opts = getOptions();
+  if(opts.length===0){ wheel.textContent='请至少启用一个选项'; return; }
+  const names = opts.map(o=>o.name);
+  drawBtn.disabled = true;
+  await animatePick(names);
+  const result = names[Math.floor(Math.random()*names.length)];
+  wheel.textContent = `抽中：${result} 🎉`;
+  pushHistory(result);
+  drawBtn.disabled = false;
+});
+
+// 抽取多名（默认为 3）
+drawMultipleBtn.addEventListener('click', async ()=>{
+  const opts = getOptions();
+  if(opts.length===0){ wheel.textContent='请至少启用一个选项'; return; }
+  const names = opts.map(o=>o.name);
+  const k = Math.min(3, names.length);
+  drawMultipleBtn.disabled = true;
+  await animatePick(names, 36);
+  // 随机抽 k 名，不重复
+  const pool = names.slice();
+  const picks = [];
+  for(let i=0;i<k;i++){
+    const idx = Math.floor(Math.random()*pool.length);
+    picks.push(pool.splice(idx,1)[0]);
+  }
+  wheel.textContent = `抽中：${picks.join('，')} 🎉`;
+  pushHistory(picks.join('，'));
+  drawMultipleBtn.disabled = false;
+});
+
+shuffleBtn.addEventListener('click', ()=>{
+  const nodes = Array.from(optionList.children);
+  for(let i=nodes.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    optionList.appendChild(nodes[j]);
+    nodes.splice(j,1);
+  }
+});
+
+resetBtn.addEventListener('click', ()=>{
+  historyEl.innerHTML = '';
+  wheel.textContent = '算法组 · 软件组 · 嵌入式组 · 宣传部 · 组织部';
+});
+
+copyBtn.addEventListener('click', async ()=>{
+  const first = historyEl.querySelector('li');
+  if(!first){ wheel.textContent='无历史可复制'; return; }
+  try{
+    await navigator.clipboard.writeText(first.textContent);
+    wheel.textContent='已复制最近结果';
+    setTimeout(()=>wheel.textContent='点击“抽签”开始',1000);
+  }catch(e){
+    wheel.textContent='复制失败（浏览器限制）';
+  }
+});
+
+// option list 操作：删除 / 编辑 / 添加
+optionList.addEventListener('click', e=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  if(action === 'delete'){
+    const opt = btn.closest('.option');
+    opt.parentNode.removeChild(opt);
+  }
+});
+
+addOptionBtn.addEventListener('click', ()=>{
+  const div = document.createElement('div');
+  div.className = 'option';
+  div.innerHTML = `<div class="leftside"><input type="checkbox" data-name="" checked><input type="text" value="新选项" data-name=""></div><div class="rightside"><button class="btn" data-action="delete">删除</button></div>`;
+  optionList.appendChild(div);
+  // focus newly added text
+  div.querySelector('input[type="text"]').focus();
+});
+
+// 导出历史为简单 CSV
+exportBtn.addEventListener('click', ()=>{
+  const items = Array.from(historyEl.querySelectorAll('li')).map(li=>li.textContent);
+  if(items.length===0){ wheel.textContent='无历史可导出'; return; }
+  const csv = items.join('\\n');
+  const blob = new Blob([csv], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '抽签历史.txt'; document.body.appendChild(a); a.click();
+  a.remove(); URL.revokeObjectURL(url);
+});
+
+// keyboard shortcuts
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Enter') drawBtn.click();
+  if(e.key.toLowerCase() === 'r') resetBtn.click();
+});
+
+// initialize accessible attributes for existing inputs (keeps data-name)
+document.querySelectorAll('.option input[type="text"]').forEach(inp=>{
+  inp.addEventListener('input', ()=>{ inp.dataset.name = inp.value; });
+});
+document.querySelectorAll('.option input[type="checkbox"]').forEach(cb=>{
+  cb.addEventListener('change', ()=>{ cb.dataset.name = cb.nextElementSibling?.value || ''; });
+});
+</script>
+</body>
+</html>
