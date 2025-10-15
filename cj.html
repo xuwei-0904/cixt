@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>随机抽签器</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #1e3a8a, #9333ea);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    .wheel {
+      width: 300px;
+      height: 150px;
+      background: #ffffff22;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+      backdrop-filter: blur(4px);
+    }
+    button {
+      background: #facc15;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 1em;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #fde047;
+      transform: translateY(-2px);
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <h1>随机抽签器</h1>
+  <div class="wheel" id="wheel">点击“开始抽签”</div>
+  <div>
+    <button id="drawBtn">开始抽签</button>
+    <button id="resetBtn">重置</button>
+  </div>
+  <script>
+    const wheel = document.getElementById("wheel");
+    const drawBtn = document.getElementById("drawBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const options = ["算法组", "软件组", "嵌入式组", "宣传部", "组织部"];
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function draw() {
+      drawBtn.disabled = true;
+      for (let i = 0; i < 25; i++) {
+        const random = options[Math.floor(Math.random() * options.length)];
+        wheel.textContent = random;
+        await sleep(60 + i * 10);
+      }
+      const result = options[Math.floor(Math.random() * options.length)];
+      wheel.textContent = `抽中：${result} 🎉`;
+      drawBtn.disabled = false;
+    }
+
+    drawBtn.addEventListener("click", draw);
+    resetBtn.addEventListener("click", () => {
+      wheel.textContent = "点击“开始抽签”";
+    });
+  </script>
+</body>
+</html>
