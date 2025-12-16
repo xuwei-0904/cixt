@@ -1,0 +1,357 @@
+ <!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机抽签器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        }
+
+        body {
+            /* 渐变背景 */
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            /* 背景固定，滚动时不移动 */
+            background-attachment: fixed;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            /* 更柔和的阴影，增加层次感 */
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            /* 毛玻璃效果 */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 32px;
+            /* 文字渐变 */
+            background: linear-gradient(90deg, #4299e1, #38b2ac);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .result-area {
+            height: 120px;
+            line-height: 120px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            font-size: 28px;
+            color: #718096;
+            transition: all 0.5s ease;
+            /* 增加内边距，优化小屏幕显示 */
+            padding: 0 20px;
+            /* 防止文字溢出 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+        }
+
+        /* 结果区域装饰 */
+        .result-area::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(247, 250, 252, 0.5), transparent);
+            z-index: -1;
+        }
+
+        .result-area.has-result {
+            border-color: #48bb78;
+            color: #48bb78;
+            font-weight: bold;
+            /* 结果出现时的缩放动画 */
+            transform: scale(1.02);
+            box-shadow: 0 4px 16px rgba(72, 187, 120, 0.2);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            /* 适配小屏幕，变为垂直排列 */
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 14px 36px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            /* 文字加粗 */
+            font-weight: 600;
+            /* 按钮阴影 */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 按钮点击的波纹效果 */
+        button::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        button:active::after {
+            width: 300px;
+            height: 300px;
+            opacity: 0;
+        }
+
+        #drawBtn {
+            background: linear-gradient(90deg, #4299e1, #38b2ac);
+            color: white;
+        }
+
+        #drawBtn:disabled {
+            background: #e2e8f0;
+            color: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #resetBtn {
+            background: linear-gradient(90deg, #e53e3e, #ed8936);
+            color: white;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .history {
+            margin-top: 40px;
+            text-align: left;
+            color: #4a5568;
+            /* 增加背景 */
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .history h3 {
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #2d3748;
+            /* 文字左侧装饰线 */
+            padding-left: 10px;
+            border-left: 4px solid #4299e1;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            /* 超出滚动 */
+            overflow-y: auto;
+        }
+
+        /* 滚动条美化 */
+        .history-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        .history-list li {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: background-color 0.2s ease;
+            /* 序号样式 */
+            counter-increment: list-counter;
+        }
+
+        /* 自定义序号 */
+        .history-list li::before {
+            content: counter(list-counter) ".";
+            color: #4299e1;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .history-list li:hover {
+            background-color: #f0f8fb;
+        }
+
+        /* 适配小屏幕 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            .result-area {
+                font-size: 24px;
+                height: 100px;
+                line-height: 100px;
+            }
+
+            button {
+                padding: 12px 28px;
+                font-size: 16px;
+                width: 100%;
+            }
+
+            .btn-group {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>小组随机抽签器</h1>
+        <!-- 抽签结果展示区域 -->
+        <div class="result-area" id="resultArea">等待抽签...</div>
+        <!-- 按钮组 -->
+        <div class="btn-group">
+            <button id="drawBtn">开始抽签</button>
+            <button id="resetBtn">重置抽签</button>
+        </div>
+        <!-- 抽签历史记录 -->
+        <div class="history">
+            <h3>抽签历史</h3>
+            <ul class="history-list" id="historyList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 获取页面元素
+        const drawBtn = document.getElementById('drawBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultArea = document.getElementById('resultArea');
+        const historyList = document.getElementById('historyList');
+
+        // 初始的小组数组
+        let groups = ['软件组', '算法组', '嵌入式组', '宣传部', '组织部'];
+        // 存储已抽中的小组
+        let drawnGroups = [];
+        // 抽签动画标识
+        let drawAnimation = null;
+
+        // 抽签滚动动画函数
+        function rollAnimation() {
+            // 随机显示小组，制造滚动效果
+            const randomIndex = Math.floor(Math.random() * groups.length);
+            resultArea.textContent = groups[randomIndex];
+        }
+
+        // 抽签函数
+        function drawGroup() {
+            // 如果没有剩余小组，直接返回
+            if (groups.length === 0) {
+                return;
+            }
+
+            // 禁用抽签按钮，防止重复点击
+            drawBtn.disabled = true;
+            // 开始滚动动画，每50ms切换一次
+            drawAnimation = setInterval(rollAnimation, 50);
+
+            // 1秒后停止动画，显示最终结果
+            setTimeout(() => {
+                clearInterval(drawAnimation);
+                drawAnimation = null;
+
+                // 生成随机索引
+                const randomIndex = Math.floor(Math.random() * groups.length);
+                // 获取随机选中的小组
+                const selectedGroup = groups[randomIndex];
+                // 从原数组中移除选中的小组（保证不重复）
+                groups.splice(randomIndex, 1);
+                // 将选中的小组加入已抽中数组
+                drawnGroups.push(selectedGroup);
+
+                // 更新结果展示
+                resultArea.textContent = `抽中：${selectedGroup}`;
+                resultArea.classList.add('has-result');
+
+                // 添加到历史记录
+                const li = document.createElement('li');
+                li.textContent = selectedGroup;
+                historyList.appendChild(li);
+                // 滚动到最新记录
+                li.scrollIntoView({ behavior: 'smooth' });
+
+                // 如果所有小组都抽完了，保持禁用状态，否则启用按钮
+                if (groups.length === 0) {
+                    resultArea.textContent = '所有小组已抽完！';
+                } else {
+                    drawBtn.disabled = false;
+                }
+            }, 1000);
+        }
+
+        // 重置函数
+        function resetDraw() {
+            // 清除动画（如果正在抽签）
+            if (drawAnimation) {
+                clearInterval(drawAnimation);
+                drawAnimation = null;
+            }
+
+            // 恢复初始小组数组
+            groups = ['软件组', '算法组', '嵌入式组', '宣传部', '组织部'];
+            // 清空已抽中数组
+            drawnGroups = [];
+            // 重置结果展示
+            resultArea.textContent = '等待抽签...';
+            resultArea.classList.remove('has-result');
+            // 启用抽签按钮
+            drawBtn.disabled = false;
+            // 清空历史记录
+            historyList.innerHTML = '';
+        }
+
+        // 绑定按钮点击事件
+        drawBtn.addEventListener('click', drawGroup);
+        resetBtn.addEventListener('click', resetDraw);
+    </script>
+</body>
+</html>
